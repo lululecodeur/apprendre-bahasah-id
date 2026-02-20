@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bahasa Indonesia (Gaul) App</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app-container">
+      <header>
+        <h1>🇮🇩 Bahasa Gaul</h1>
+        <nav>
+          <button class="nav-btn active">Flashcards</button>
+          <button class="nav-btn" onclick="alert('Bientôt : Générateur de phrases !')">
+            Phrases
+          </button>
+          <button class="nav-btn" onclick="alert('Bientôt : QCM !')">QCM</button>
+        </nav>
+        <div class="stats">Mots à réviser : <span id="mots-restants">0</span></div>
+      </header>
+
+      <main id="flashcard-section">
+        <div class="flashcard" id="carte">
+          <div class="card-content" id="card-content">Appuie sur "Commencer"</div>
+        </div>
+
+        <div class="controls" id="controls-start">
+          <button class="btn-primary" onclick="piocherMot()">Commencer</button>
+        </div>
+
+        <div class="controls hidden" id="controls-answer">
+          <button class="btn-primary" onclick="retournerCarte()">Voir la réponse</button>
+        </div>
+
+        <div class="controls hidden" id="controls-eval">
+          <button class="btn-wrong" onclick="evaluer(false)">❌ Faux</button>
+          <button class="btn-right" onclick="evaluer(true)">✅ Juste</button>
+        </div>
+      </main>
+    </div>
+
+    <!-- On charge les données puis la logique -->
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

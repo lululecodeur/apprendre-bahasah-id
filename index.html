@@ -9,34 +9,90 @@
   <body>
     <div class="app-container">
       <header>
-        <h1>🇮🇩 Bahasa Gaul</h1>
-        <nav>
-          <button class="nav-btn active">Flashcards</button>
-          <button class="nav-btn" onclick="alert('Bientôt : Générateur de phrases !')">
-            Phrases
-          </button>
-          <button class="nav-btn" onclick="alert('Bientôt : QCM !')">QCM</button>
-        </nav>
-        <div class="stats">Mots à réviser : <span id="mots-restants">0</span></div>
+        <h1>Belajar bahasa Indonesia</h1>
       </header>
 
-      <main id="flashcard-section">
+      <main id="home-module">
+        <div class="menu-grid">
+          <button class="menu-card" onclick="showModule('flashcard-section')">
+            <span class="icon">🎴</span>
+            <div class="menu-text">
+              <h3>Flashcards</h3>
+              <p>Maîtrise ton vocabulaire</p>
+            </div>
+          </button>
+
+          <button class="menu-card" onclick="showModule('generator-section')">
+            <span class="icon">✍️</span>
+            <div class="menu-text">
+              <h3>Générateur</h3>
+              <p>Crée des phrases avec l'IA</p>
+            </div>
+          </button>
+
+          <button class="menu-card" onclick="showModule('chat-section')">
+            <span class="icon">💬</span>
+            <div class="menu-text">
+              <h3>Conversation</h3>
+              <p>Discute en Bahasa Gaul</p>
+            </div>
+          </button>
+        </div>
+      </main>
+
+      <main id="flashcard-section" class="module hidden">
+        <div class="progress-container flashcard-progress">
+          <div class="progress-bar" id="progress-fill" style="width: 0%"></div>
+          <span class="progress-text">
+            <span id="mots-acquis">0</span> / <span id="total-mots">0</span> maîtrisés
+          </span>
+        </div>
+
         <div class="flashcard" id="carte">
-          <div class="card-content" id="card-content">Appuie sur "Commencer"</div>
+          <div class="card-face card-front">
+            <div id="content-front" class="question">Appuie sur "Commencer"</div>
+          </div>
+          <div class="card-face card-back">
+            <div id="content-back"></div>
+          </div>
         </div>
 
         <div class="controls" id="controls-start">
           <button class="btn-primary" onclick="piocherMot()">Commencer</button>
         </div>
-
         <div class="controls hidden" id="controls-answer">
           <button class="btn-primary" onclick="retournerCarte()">Voir la réponse</button>
         </div>
-
         <div class="controls hidden" id="controls-eval">
-          <button class="btn-wrong" onclick="evaluer(false)">❌ Faux</button>
-          <button class="btn-right" onclick="evaluer(true)">✅ Juste</button>
+          <button class="btn-wrong" onclick="evaluer(false)">Faux</button>
+          <button class="btn-right" onclick="evaluer(true)">Juste</button>
         </div>
+
+        <button class="btn-back" onclick="showModule('home-module')">← Retour au menu</button>
+      </main>
+
+      <main id="generator-section" class="module hidden">
+        <div class="glass-card">
+          <h2>Générateur de Phrases</h2>
+          <p>L'IA va utiliser tes mots pour créer des phrases réelles.</p>
+          <div id="phrase-result" class="result-area">La phrase apparaîtra ici...</div>
+          <button class="btn-primary" onclick="genererPhraseAvecIA()">Générer une phrase</button>
+        </div>
+        <button class="btn-back" onclick="showModule('home-module')">← Retour au menu</button>
+      </main>
+
+      <main id="chat-section" class="module hidden">
+        <div class="glass-card">
+          <h2>Conversation avec Gemini</h2>
+          <div id="chat-window" class="chat-window">
+            <p><em>Système : Selamat datang! Discutons en indonésien.</em></p>
+          </div>
+          <div class="chat-input-area">
+            <input type="text" id="user-input" placeholder="Dis quelque chose..." />
+            <button class="btn-right" onclick="envoyerMessage()">OK</button>
+          </div>
+        </div>
+        <button class="btn-back" onclick="showModule('home-module')">← Retour au menu</button>
       </main>
     </div>
 

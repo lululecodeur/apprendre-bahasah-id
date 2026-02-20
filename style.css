@@ -219,35 +219,55 @@ h1 {
 }
 
 /* --- BOUTONS --- */
-button {
-  font-family: inherit;
+/* --- DESIGN DES BOUTONS UX --- */
+.btn-primary,
+.btn-right,
+.btn-wrong {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 55px; /* Hauteur fixe pour une meilleure prise en main mobile */
+  border-radius: 20px; /* Look moderne "squircle" */
+  font-size: 1.1rem;
   font-weight: 700;
+  border: none;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+  width: 100%; /* Prend toute la largeur de son container */
+  max-width: 280px; /* Mais pas trop large non plus */
 }
 
+/* Effet flottant au survol */
+.btn-primary:hover,
+.btn-right:hover,
+.btn-wrong:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Effet clic */
+.btn-primary:active,
+.btn-right:active,
+.btn-wrong:active {
+  transform: translateY(-1px);
+}
+
+/* Couleurs spécifiques */
 .btn-primary {
   background: var(--primary);
   color: white;
-  padding: 16px 32px;
-  border-radius: 18px;
-  border: none;
+}
+
+/* Espacement des conteneurs de boutons */
+.controls {
+  display: flex;
+  justify-content: center;
   width: 100%;
-  font-size: 1.1rem;
-}
-
-.btn-back {
-  background: transparent;
-  color: white;
-  border: 2px solid rgba(255, 255, 255, 0.5);
-  margin-top: 25px;
-  padding: 10px 20px;
-  border-radius: 50px;
-  width: auto;
-}
-
-.btn-back:hover {
-  background: rgba(255, 255, 255, 0.1);
+  margin-top: 30px; /* Espace crucial pour laisser respirer la flashcard */
+  padding: 0 20px;
+  box-sizing: border-box;
 }
 
 /* --- CHAT SECTION --- */
@@ -367,4 +387,63 @@ input[type='text']:focus {
 .btn-right::before {
   content: '✓';
   font-weight: 800;
+}
+.btn-back {
+  background: rgba(255, 255, 255, 0.15); /* Fond translucide */
+  backdrop-filter: blur(10px); /* Effet flou derrière le bouton */
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  margin: 30px auto 0 auto; /* Centrage et espace en haut */
+  padding: 10px 25px;
+  border-radius: 50px; /* Forme pillule parfaite */
+  font-size: 0.85rem; /* Plus petit pour la hiérarchie */
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: fit-content; /* Ne prend que la largeur du texte */
+  max-width: 200px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.btn-back:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.btn-back:active {
+  transform: translateY(0);
+}
+
+/* Alignement des boutons dans la modale */
+#modal-ajout .controls {
+  display: flex; /* Aligne les éléments sur une ligne */
+  gap: 12px; /* Espace entre les deux boutons */
+  width: 100%; /* Prend toute la largeur disponible */
+  margin-top: 25px; /* Espace avec les champs de texte */
+}
+
+#modal-ajout .controls button {
+  flex: 1; /* Donne la même largeur aux deux boutons */
+  padding: 12px; /* Un peu moins haut pour tenir sur une ligne */
+  font-size: 0.95rem; /* Texte légèrement plus petit pour éviter les retours à la ligne */
+  max-width: none; /* On annule la limite précédente pour ce cas précis */
+}
+
+/* Style pour les labels dans la modale */
+#modal-ajout label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #64748b;
+  margin-top: 15px;
+}
+
+#modal-ajout input {
+  width: 100%;
+  box-sizing: border-box; /* Évite que l'input ne dépasse de la carte */
 }

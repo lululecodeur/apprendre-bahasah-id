@@ -14,6 +14,48 @@
 
       <main id="home-module">
         <div class="menu-grid">
+          <button class="menu-card" onclick="ouvrirModalAjout()">
+            <span class="icon">➕</span>
+            <div class="menu-text">
+              <h3>Ajouter</h3>
+              <p>Enrichir ton dictionnaire</p>
+            </div>
+          </button>
+
+          <div
+            id="modal-ajout"
+            class="module hidden"
+            style="
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background: rgba(0, 0, 0, 0.8);
+              z-index: 1000;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            "
+          >
+            <div class="glass-card" style="width: 90%; max-width: 400px; text-align: left">
+              <h2 style="color: var(--primary); margin-top: 0">Nouveau mot 🇮🇩</h2>
+
+              <label>Français</label>
+              <input type="text" id="new-fr" placeholder="ex: Travail" />
+
+              <label>Bahasa Gaul (Argot)</label>
+              <input type="text" id="new-gaul" placeholder="ex: Kerja / Nguli" />
+
+              <label>Bahasa Baku (Formel)</label>
+              <input type="text" id="new-baku" placeholder="ex: Bekerja" />
+
+              <div class="controls" style="margin-top: 20px">
+                <button class="btn-wrong" onclick="fermerModalAjout()">Annuler</button>
+                <button class="btn-right" onclick="ajouterNouveauMot()">Enregistrer</button>
+              </div>
+            </div>
+          </div>
           <button class="menu-card" onclick="showModule('flashcard-section')">
             <span class="icon">🎴</span>
             <div class="menu-text">
@@ -38,6 +80,13 @@
             </div>
           </button>
         </div>
+        <button
+          class="btn-back"
+          style="margin-top: 50px; opacity: 0.6; font-size: 0.7rem"
+          onclick="resetComplet()"
+        >
+          ⚠️ Réinitialiser toute la progression
+        </button>
       </main>
 
       <main id="flashcard-section" class="module hidden">
@@ -96,7 +145,9 @@
       </main>
     </div>
 
-    <!-- On charge les données puis la logique -->
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+
     <script src="data.js"></script>
     <script src="app.js"></script>
   </body>

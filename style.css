@@ -447,3 +447,38 @@ input[type='text']:focus {
   width: 100%;
   box-sizing: border-box; /* Évite que l'input ne dépasse de la carte */
 }
+
+.dictionary-list {
+  max-height: 400px;
+  overflow-y: auto;
+  margin-top: 20px;
+  text-align: left;
+}
+
+.dict-item {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dict-info h4 {
+  margin: 0;
+  color: var(--primary);
+}
+.dict-info p {
+  margin: 2px 0 0;
+  font-size: 0.8em;
+  opacity: 0.7;
+}
+
+.level-badge {
+  font-size: 0.7em;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--secondary);
+  color: white;
+}

@@ -9,7 +9,7 @@
   <body>
     <div class="app-container">
       <header>
-        <h1>Belajar bahasa Indonesia</h1>
+        <h1>Belajar Bahasa Indonesia</h1>
       </header>
 
       <main id="home-module">
@@ -87,6 +87,13 @@
         >
           ⚠️ Réinitialiser toute la progression
         </button>
+        <button class="menu-card" onclick="ouvrirDictionnaire()">
+          <span class="icon">📖</span>
+          <div class="menu-text">
+            <h3>Dictionnaire</h3>
+            <p>Voir tes ${monVocabulaire.length} mots</p>
+          </div>
+        </button>
       </main>
 
       <main id="flashcard-section" class="module hidden">
@@ -140,6 +147,22 @@
             <input type="text" id="user-input" placeholder="Dis quelque chose..." />
             <button class="btn-right" onclick="envoyerMessage()">OK</button>
           </div>
+        </div>
+        <button class="btn-back" onclick="showModule('home-module')">← Retour au menu</button>
+      </main>
+
+      <main id="dictionary-section" class="module hidden">
+        <div class="glass-card">
+          <h2>Mon Dictionnaire</h2>
+          <div class="search-bar">
+            <input
+              type="text"
+              id="dict-search"
+              placeholder="Rechercher un mot..."
+              oninput="filtrerDictionnaire()"
+            />
+          </div>
+          <div id="dictionary-list" class="dictionary-list"></div>
         </div>
         <button class="btn-back" onclick="showModule('home-module')">← Retour au menu</button>
       </main>

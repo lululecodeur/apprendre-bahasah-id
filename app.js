@@ -278,3 +278,37 @@ function resetComplet() {
     location.reload(); // Recharge la page
   }
 }
+
+function ouvrirDictionnaire() {
+  showModule('dictionary-section');
+  afficherDictionnaire(monVocabulaire);
+}
+
+function afficherDictionnaire(liste) {
+  const conteneur = document.getElementById('dictionary-list');
+  conteneur.innerHTML = '';
+
+  // On trie par ordre alphabétique français
+  const triee = [...liste].sort((a, b) => a.fr.localeCompare(b.fr));
+
+  triee.forEach(mot => {
+    const div = document.createElement('div');
+    div.className = 'dict-item';
+    div.innerHTML = `
+            <div class="dict-info">
+                <h4>${mot.fr}</h4>
+                <p>${mot.gaul} ${mot.baku ? `(${mot.baku})` : ''}</p>
+            </div>
+            <div class="level-badge">Niveau ${mot.level || 0}</div>
+        `;
+    conteneur.appendChild(div);
+  });
+}
+
+function filtrerDictionnaire() {
+  const recherche = document.getElementById('dict-search').value.toLowerCase();
+  const resultats = monVocabulaire.filter(
+    m => m.fr.toLowerCase().includes(recherche) || m.gaul.toLowerCase().includes(recherche)
+  );
+  afficherDictionnaire(resultats);
+}

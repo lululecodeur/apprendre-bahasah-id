@@ -85,24 +85,45 @@ function sauvegarderDonnees() {
   mettreAJourStats();
 }
 
+// ... Tes clés Firebase et variables globales restent les mêmes en haut ...
+
 function mettreAJourStats() {
   const maintenant = Date.now();
-  const aReviser = monVocabulaire.filter(m => m.level > 0 && m.prochaineRevision <= maintenant);
-  const nouveauxRestants = Math.max(0, 20 - nouveauxMotsAujourdhui);
-  const resteAFaire = aReviser.length + nouveauxRestants;
 
+  // 1. On compte les révisions réelles qui attendent
+  const aReviser = monVocabulaire.filter(m => m.level > 0 && m.prochaineRevision <= maintenant);
+
+  // 2. On compte les nouveaux mots qu'il reste à voir pour atteindre le quota de 20
+  // On s'assure de ne pas compter plus de mots que ce qu'il y a dans le dictionnaire
+  const nouveauxDispo = monVocabulaire.filter(m => m.level === 0).length;
+  const quotaRestant = Math.max(0, 20 - nouveauxMotsAujourdhui);
+  const nouveauxAFaire = Math.min(nouveauxDispo, quotaRestant);
+
+  // 3. Le total qu'il reste à traiter
+  const resteAFaire = aReviser.length + nouveauxAFaire;
+
+  // 4. Calcul du pourcentage basé sur le total fixé au début de la session
   let pourcentage = 0;
   if (totalSessionFixe > 0) {
+    // Si totalSessionFixe est 2, et resteAFaire est 1, on a fait 50%
     pourcentage = ((totalSessionFixe - resteAFaire) / totalSessionFixe) * 100;
   }
 
-  document.getElementById('progress-fill').style.width =
-    `${Math.max(0, Math.min(100, pourcentage))}%`;
+  // 5. Mise à jour visuelle
+  const fill = document.getElementById('progress-fill');
+  if (fill) {
+    fill.style.width = `${Math.max(0, Math.min(100, pourcentage))}%`;
+  }
+
   document.getElementById('mots-acquis').innerText = Math.max(0, totalSessionFixe - resteAFaire);
   document.getElementById('total-mots').innerText = totalSessionFixe;
+
+  // Mise à jour du petit badge sur le bouton du menu
+  const dictCounter = document.getElementById('nb-mots-dict');
+  if (dictCounter) dictCounter.innerText = monVocabulaire.length;
 }
 
-// Logique des Flashcards
+// MODIFICATION de piocherMot pour bien initialiser la barre
 function piocherMot() {
   const maintenant = Date.now();
   let aReviser = monVocabulaire.filter(m => m.level > 0 && m.prochaineRevision <= maintenant);
@@ -112,30 +133,29 @@ function piocherMot() {
 
   let sessionPool = [...aReviser, ...nouveauxPourSession];
 
+  // FIXER LE TOTAL : Si c'est le début de la session, on enregistre le nombre total
+  if (totalSessionFixe === 0 && sessionPool.length > 0) {
+    totalSessionFixe = sessionPool.length;
+  }
+
   if (sessionPool.length === 0) {
-    totalSessionFixe = 0;
+    totalSessionFixe = 0; // On reset pour la prochaine fois
     afficherFinSession();
     return;
   }
 
-  // Mélange aléatoire
+  // Mélange et sélection
   sessionPool.sort(() => Math.random() - 0.5);
-
-  if (totalSessionFixe === 0) {
-    totalSessionFixe = sessionPool.length;
-  }
-
   motActuel = sessionPool[0];
 
   if (motActuel.level === 0 && !motActuel.dejaVuCetteSession) {
     nouveauxMotsAujourdhui++;
     motActuel.dejaVuCetteSession = true;
-    // On sauvegarde le compteur immédiatement
     db.ref('users/' + userId + '/compteurNouveaux').set(nouveauxMotsAujourdhui);
   }
 
   afficherCarte();
-  mettreAJourStats();
+  mettreAJourStats(); // On force la mise à jour de la barre ici
 
   document.getElementById('controls-start').classList.add('hidden');
   document.getElementById('controls-answer').classList.remove('hidden');
@@ -192,9 +212,11 @@ function evaluer(estCorrect) {
   } else {
     motActuel.level = 0;
     motActuel.prochaineRevision = Date.now() - 60000;
+    // On ne reset pas dejaVuCetteSession ici pour ne pas fausser le quota journalier
   }
 
   sauvegarderDonnees();
+  mettreAJourStats(); // <-- C'est cet appel qui fait bouger la barre immédiatement !
 
   const carte = document.getElementById('carte');
   carte.classList.remove('flipped');
@@ -211,14 +233,27 @@ document.getElementById('carte').addEventListener('click', () => {
 });
 
 function showModule(moduleId) {
-  // Masque toutes les sections principales
-  const modules = ['home-module', 'flashcard-section', 'generator-section', 'chat-section'];
+  // 1. Liste TOUS tes identifiants de sections principales
+  const modules = [
+    'home-module',
+    'flashcard-section',
+    'generator-section',
+    'chat-section',
+    'dictionary-section', // <--- Vérifie bien que celui-ci est là !
+  ];
+
+  // 2. Cache tout le monde
   modules.forEach(id => {
-    document.getElementById(id).classList.add('hidden');
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
   });
 
-  // Affiche celle sélectionnée
-  document.getElementById(moduleId).classList.remove('hidden');
+  // 3. Affiche uniquement celui demandé
+  const target = document.getElementById(moduleId);
+  if (target) {
+    target.classList.remove('hidden');
+    window.scrollTo(0, 0); // Remonte en haut de page pour éviter les décalages
+  }
 }
 
 function ouvrirModalAjout() {
@@ -269,16 +304,6 @@ function afficherFinSession() {
   document.getElementById('controls-eval').classList.add('hidden');
 }
 
-function resetComplet() {
-  if (confirm('Es-tu sûr de vouloir effacer TOUTE ta progression et tes mots personnalisés ?')) {
-    localStorage.removeItem('indo_scores');
-    localStorage.removeItem('indo_vocab_custom');
-    localStorage.removeItem('compteur_nouveaux');
-    localStorage.removeItem('derniere_journee_id');
-    location.reload(); // Recharge la page
-  }
-}
-
 function ouvrirDictionnaire() {
   showModule('dictionary-section');
   afficherDictionnaire(monVocabulaire);
@@ -288,10 +313,10 @@ function afficherDictionnaire(liste) {
   const conteneur = document.getElementById('dictionary-list');
   conteneur.innerHTML = '';
 
-  // On trie par ordre alphabétique français
   const triee = [...liste].sort((a, b) => a.fr.localeCompare(b.fr));
 
   triee.forEach(mot => {
+    const estCustom = mot.id && mot.id.toString().startsWith('custom_');
     const div = document.createElement('div');
     div.className = 'dict-item';
     div.innerHTML = `
@@ -299,10 +324,27 @@ function afficherDictionnaire(liste) {
                 <h4>${mot.fr}</h4>
                 <p>${mot.gaul} ${mot.baku ? `(${mot.baku})` : ''}</p>
             </div>
-            <div class="level-badge">Niveau ${mot.level || 0}</div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="level-badge">Niv. ${mot.level || 0}</div>
+                ${estCustom ? `<button onclick="supprimerMot('${mot.id}')" style="background:none; border:none; cursor:pointer; font-size:1.2em;">🗑️</button>` : ''}
+            </div>
         `;
     conteneur.appendChild(div);
   });
+}
+
+async function supprimerMot(id) {
+  if (confirm('Supprimer ce mot définitivement du Cloud ?')) {
+    // 1. Retirer du tableau local
+    monVocabulaire = monVocabulaire.filter(m => m.id !== id);
+
+    // 2. Sauvegarder sur Firebase (la fonction sauvegarderDonnees() s'occupe de filtrer les custom)
+    sauvegarderDonnees();
+
+    // 3. Rafraîchir l'affichage
+    afficherDictionnaire(monVocabulaire);
+    alert('Mot supprimé !');
+  }
 }
 
 function filtrerDictionnaire() {
@@ -311,4 +353,23 @@ function filtrerDictionnaire() {
     m => m.fr.toLowerCase().includes(recherche) || m.gaul.toLowerCase().includes(recherche)
   );
   afficherDictionnaire(resultats);
+}
+
+function resetComplet() {
+  if (confirm('Es-tu sûr de vouloir effacer TOUTE ta progression (Cloud + Local) ?')) {
+    // 1. Nettoyage Local
+    localStorage.clear();
+
+    // 2. Nettoyage Firebase
+    db.ref('users/' + userId)
+      .remove()
+      .then(() => {
+        alert('Progression réinitialisée !');
+        location.reload();
+      })
+      .catch(err => {
+        console.error('Erreur Firebase reset:', err);
+        location.reload();
+      });
+  }
 }

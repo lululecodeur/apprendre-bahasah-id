@@ -482,3 +482,9 @@ input[type='text']:focus {
   background: var(--secondary);
   color: white;
 }
+.dict-item button {
+  transition: transform 0.2s;
+}
+.dict-item button:active {
+  transform: scale(0.8);
+}

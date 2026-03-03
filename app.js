@@ -199,7 +199,14 @@ function evaluer(estCorrect) {
   prochainReset4h.setHours(4, 0, 0, 0);
 
   if (estCorrect) {
-    motActuel.level += 1;
+    // ON NE COMPTE LE NOUVEAU MOT QUE SI ON A MIS VRAI
+    if (motActuel.level === 0) {
+      nouveauxMotsAujourdhui++;
+      // On peut sauvegarder le compteur direct pour Firebase
+      db.ref('users/' + userId + '/compteurNouveaux').set(nouveauxMotsAujourdhui);
+    }
+
+    motActuel.level += 1; // Le niveau monte, il sort des "nouveaux"
     const intervalles = [0, 1, 3, 7, 14, 30];
     const joursAajouter = intervalles[Math.min(motActuel.level, 5)];
 
@@ -207,16 +214,21 @@ function evaluer(estCorrect) {
     if (maintenant.getHours() < 4) {
       baseTemps -= 24 * 60 * 60 * 1000;
     }
+    // Sa date de révision passe au futur, il sort des "à réviser"
     motActuel.prochaineRevision = baseTemps + joursAajouter * 24 * 60 * 60 * 1000;
-    motActuel.dejaVuCetteSession = false;
   } else {
+    // SI FAUX : On le remet à zéro pour qu'il RESTE dans la liste "à faire"
     motActuel.level = 0;
-    motActuel.prochaineRevision = Date.now() - 60000;
-    // On ne reset pas dejaVuCetteSession ici pour ne pas fausser le quota journalier
+    motActuel.prochaineRevision = Date.now() - 60000; // Disponible immédiatement
+
+    // Note : On n'augmente PAS nouveauxMotsAujourdhui ici
   }
 
   sauvegarderDonnees();
-  mettreAJourStats(); // <-- C'est cet appel qui fait bouger la barre immédiatement !
+
+  // ICI : La barre va avancer SI estCorrect était vrai,
+  // car 'resteAFaire' aura diminué dans mettreAJourStats
+  mettreAJourStats();
 
   const carte = document.getElementById('carte');
   carte.classList.remove('flipped');

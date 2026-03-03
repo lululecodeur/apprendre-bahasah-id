@@ -313,26 +313,38 @@ function afficherDictionnaire(liste) {
   const conteneur = document.getElementById('dictionary-list');
   conteneur.innerHTML = '';
 
+  // Tri alphabétique par défaut
   const triee = [...liste].sort((a, b) => a.fr.localeCompare(b.fr));
 
   triee.forEach(mot => {
     const estCustom = mot.id && mot.id.toString().startsWith('custom_');
+    const niveau = mot.level || 0;
+
+    // Déterminer une couleur selon le niveau pour voir la maîtrise d'un coup d'œil
+    let color = '#ef4444'; // Rouge (Niveau 0)
+    if (niveau >= 1) color = '#f59e0b'; // Orange
+    if (niveau >= 3) color = '#10b981'; // Vert
+    if (niveau >= 5) color = '#3b82f6'; // Bleu (Maîtrisé)
+
     const div = document.createElement('div');
     div.className = 'dict-item';
     div.innerHTML = `
-            <div class="dict-info">
-                <h4>${mot.fr}</h4>
-                <p>${mot.gaul} ${mot.baku ? `(${mot.baku})` : ''}</p>
+        <div class="dict-info">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <h4 style="margin:0;">${mot.fr}</h4>
+                <span style="font-size: 0.7em; padding: 2px 6px; border-radius: 10px; background: ${color}22; color: ${color}; border: 1px solid ${color};">
+                    Niv. ${niveau}
+                </span>
             </div>
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <div class="level-badge">Niv. ${mot.level || 0}</div>
-                ${estCustom ? `<button onclick="supprimerMot('${mot.id}')" style="background:none; border:none; cursor:pointer; font-size:1.2em;">🗑️</button>` : ''}
-            </div>
-        `;
+            <p style="margin: 5px 0 0 0; color: #555;">${mot.gaul} ${mot.baku ? `<small style="color:gray;">(${mot.baku})</small>` : ''}</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            ${estCustom ? `<button onclick="supprimerMot('${mot.id}')" style="background:none; border:none; cursor:pointer; font-size:1.2em; opacity: 0.5;">🗑️</button>` : ''}
+        </div>
+    `;
     conteneur.appendChild(div);
   });
 }
-
 async function supprimerMot(id) {
   if (confirm('Supprimer ce mot définitivement du Cloud ?')) {
     // 1. Retirer du tableau local

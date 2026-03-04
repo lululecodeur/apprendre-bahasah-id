@@ -126,31 +126,41 @@ function mettreAJourStats() {
 function piocherMot() {
   const maintenant = Date.now();
 
-  // 1. Filtrer les mots
+  // 1. Filtrer les mots à réviser (ceux qui sont déjà connus mais "dus")
   let aReviser = monVocabulaire.filter(m => m.level > 0 && m.prochaineRevision <= maintenant);
+
+  // 2. Gérer les nouveaux mots (Niveau 0)
   let nouveauxDispos = monVocabulaire.filter(m => m.level === 0);
+
+  // ON CALCULE LE QUOTA (Important pour ne pas dépasser 20/jour)
   let quotaNouveaux = Math.max(0, 20 - nouveauxMotsAujourdhui);
+
+  // ON MÉLANGE TOUTE LA LISTE DES NOUVEAUX POUR LE HASARD
+  nouveauxDispos.sort(() => Math.random() - 0.5);
+
+  // ON PREND LES PROCHAINS DANS LA LIMITE DU QUOTA
   let nouveauxPourSession = nouveauxDispos.slice(0, quotaNouveaux);
 
+  // 3. Création du pool de la session
   let sessionPool = [...aReviser, ...nouveauxPourSession];
 
-  // 2. Fixer le total au premier lancement
+  // 4. Fixer le total au premier lancement (pour la barre de progression)
   if (totalSessionFixe === 0 && sessionPool.length > 0) {
     totalSessionFixe = sessionPool.length;
   }
 
-  // 3. Fin de session
+  // 5. Fin de session si plus rien à faire
   if (sessionPool.length === 0) {
     totalSessionFixe = 0;
     afficherFinSession();
     return;
   }
 
-  // 4. Mélange et sélection
+  // 6. Mélange final pour mixer révisions et nouveaux
   sessionPool.sort(() => Math.random() - 0.5);
   motActuel = sessionPool[0];
 
-  // 5. Affichage
+  // 7. Affichage
   afficherCarte();
   mettreAJourStats();
 

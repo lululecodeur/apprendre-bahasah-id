@@ -90,35 +90,34 @@ function sauvegarderDonnees() {
 function mettreAJourStats() {
   const maintenant = Date.now();
 
-  // 1. On compte les révisions réelles qui attendent
-  const aReviser = monVocabulaire.filter(m => m.level > 0 && m.prochaineRevision <= maintenant);
+  // 1. Révisions dues
+  const aReviser = monVocabulaire.filter(
+    m => m.level > 0 && m.prochaineRevision <= maintenant
+  ).length;
 
-  // 2. On compte les nouveaux mots qu'il reste à voir pour atteindre le quota de 20
-  // On s'assure de ne pas compter plus de mots que ce qu'il y a dans le dictionnaire
+  // 2. Nouveaux mots restants dans le quota
   const nouveauxDispo = monVocabulaire.filter(m => m.level === 0).length;
   const quotaRestant = Math.max(0, 20 - nouveauxMotsAujourdhui);
   const nouveauxAFaire = Math.min(nouveauxDispo, quotaRestant);
 
-  // 3. Le total qu'il reste à traiter
-  const resteAFaire = aReviser.length + nouveauxAFaire;
+  // 3. Calcul du reste
+  const resteAFaire = aReviser + nouveauxAFaire;
 
-  // 4. Calcul du pourcentage basé sur le total fixé au début de la session
+  // 4. Calcul du pourcentage
   let pourcentage = 0;
   if (totalSessionFixe > 0) {
-    // Si totalSessionFixe est 2, et resteAFaire est 1, on a fait 50%
+    // Progression = (Ce qu'on a fini) / (Total de départ)
     pourcentage = ((totalSessionFixe - resteAFaire) / totalSessionFixe) * 100;
   }
 
-  // 5. Mise à jour visuelle
+  // 5. Mise à jour du DOM
   const fill = document.getElementById('progress-fill');
-  if (fill) {
-    fill.style.width = `${Math.max(0, Math.min(100, pourcentage))}%`;
-  }
+  if (fill) fill.style.width = `${Math.max(0, Math.min(100, pourcentage))}%`;
 
   document.getElementById('mots-acquis').innerText = Math.max(0, totalSessionFixe - resteAFaire);
   document.getElementById('total-mots').innerText = totalSessionFixe;
 
-  // Mise à jour du petit badge sur le bouton du menu
+  // Badge menu
   const dictCounter = document.getElementById('nb-mots-dict');
   if (dictCounter) dictCounter.innerText = monVocabulaire.length;
 }
@@ -126,6 +125,8 @@ function mettreAJourStats() {
 // MODIFICATION de piocherMot pour bien initialiser la barre
 function piocherMot() {
   const maintenant = Date.now();
+
+  // 1. Filtrer les mots
   let aReviser = monVocabulaire.filter(m => m.level > 0 && m.prochaineRevision <= maintenant);
   let nouveauxDispos = monVocabulaire.filter(m => m.level === 0);
   let quotaNouveaux = Math.max(0, 20 - nouveauxMotsAujourdhui);
@@ -133,29 +134,25 @@ function piocherMot() {
 
   let sessionPool = [...aReviser, ...nouveauxPourSession];
 
-  // FIXER LE TOTAL : Si c'est le début de la session, on enregistre le nombre total
+  // 2. Fixer le total au premier lancement
   if (totalSessionFixe === 0 && sessionPool.length > 0) {
     totalSessionFixe = sessionPool.length;
   }
 
+  // 3. Fin de session
   if (sessionPool.length === 0) {
-    totalSessionFixe = 0; // On reset pour la prochaine fois
+    totalSessionFixe = 0;
     afficherFinSession();
     return;
   }
 
-  // Mélange et sélection
+  // 4. Mélange et sélection
   sessionPool.sort(() => Math.random() - 0.5);
   motActuel = sessionPool[0];
 
-  if (motActuel.level === 0 && !motActuel.dejaVuCetteSession) {
-    nouveauxMotsAujourdhui++;
-    motActuel.dejaVuCetteSession = true;
-    db.ref('users/' + userId + '/compteurNouveaux').set(nouveauxMotsAujourdhui);
-  }
-
+  // 5. Affichage
   afficherCarte();
-  mettreAJourStats(); // On force la mise à jour de la barre ici
+  mettreAJourStats();
 
   document.getElementById('controls-start').classList.add('hidden');
   document.getElementById('controls-answer').classList.remove('hidden');
@@ -194,40 +191,38 @@ function retournerCarte() {
 }
 
 function evaluer(estCorrect) {
-  const maintenant = new Date();
+  const maintenant = Date.now();
   const prochainReset4h = new Date();
   prochainReset4h.setHours(4, 0, 0, 0);
 
   if (estCorrect) {
-    // ON NE COMPTE LE NOUVEAU MOT QUE SI ON A MIS VRAI
+    // On n'augmente le quota journalier que si c'est la première fois qu'on réussit ce mot
     if (motActuel.level === 0) {
       nouveauxMotsAujourdhui++;
-      // On peut sauvegarder le compteur direct pour Firebase
+      // On synchronise le compteur avec Firebase immédiatement
       db.ref('users/' + userId + '/compteurNouveaux').set(nouveauxMotsAujourdhui);
     }
 
-    motActuel.level += 1; // Le niveau monte, il sort des "nouveaux"
+    // Passage au niveau supérieur
+    motActuel.level += 1;
     const intervalles = [0, 1, 3, 7, 14, 30];
     const joursAajouter = intervalles[Math.min(motActuel.level, 5)];
 
     let baseTemps = prochainReset4h.getTime();
-    if (maintenant.getHours() < 4) {
+    if (new Date().getHours() < 4) {
       baseTemps -= 24 * 60 * 60 * 1000;
     }
-    // Sa date de révision passe au futur, il sort des "à réviser"
     motActuel.prochaineRevision = baseTemps + joursAajouter * 24 * 60 * 60 * 1000;
   } else {
-    // SI FAUX : On le remet à zéro pour qu'il RESTE dans la liste "à faire"
+    // Si FAUX : le mot retombe au niveau 0 et reste "à faire" (revision passée)
     motActuel.level = 0;
-    motActuel.prochaineRevision = Date.now() - 60000; // Disponible immédiatement
-
-    // Note : On n'augmente PAS nouveauxMotsAujourdhui ici
+    motActuel.prochaineRevision = Date.now() - 60000;
   }
 
+  // Sauvegarde globale (scores + custom)
   sauvegarderDonnees();
 
-  // ICI : La barre va avancer SI estCorrect était vrai,
-  // car 'resteAFaire' aura diminué dans mettreAJourStats
+  // Mise à jour de la barre AVANT de piocher le suivant
   mettreAJourStats();
 
   const carte = document.getElementById('carte');

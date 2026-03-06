@@ -95,13 +95,18 @@ function mettreAJourStats() {
     m => m.level > 0 && m.prochaineRevision <= maintenant
   ).length;
 
+  // Mots de niveau 0 déjà tentés aujourd'hui et ratés (prochaineRevision dans le passé)
+  const ratesNiveau0 = monVocabulaire.filter(
+    m => m.level === 0 && m.prochaineRevision > 0 && m.prochaineRevision <= maintenant
+  ).length;
+
   // 2. Nouveaux mots restants dans le quota
   const nouveauxDispo = monVocabulaire.filter(m => m.level === 0).length;
   const quotaRestant = Math.max(0, 20 - nouveauxMotsAujourdhui);
   const nouveauxAFaire = Math.min(nouveauxDispo, quotaRestant);
 
   // 3. Calcul du reste
-  const resteAFaire = aReviser + nouveauxAFaire;
+  const resteAFaire = aReviser + nouveauxAFaire + ratesNiveau0;
 
   // 4. Calcul du pourcentage
   let pourcentage = 0;
@@ -224,8 +229,8 @@ function evaluer(estCorrect) {
     }
     motActuel.prochaineRevision = baseTemps + joursAajouter * 24 * 60 * 60 * 1000;
   } else {
-    // Si FAUX : le mot retombe au niveau 0 et reste "à faire" (revision passée)
-    motActuel.level = 0;
+    // Si FAUX : descend d'un niveau (min 1) et reste dû immédiatement
+    motActuel.level = Math.max(1, motActuel.level - 1);
     motActuel.prochaineRevision = Date.now() - 60000;
   }
 

@@ -129,6 +129,12 @@ function mettreAJourStats() {
 
 // MODIFICATION de piocherMot pour bien initialiser la barre
 function piocherMot() {
+  if (
+    document.getElementById('controls-start') &&
+    !document.getElementById('controls-start').classList.contains('hidden')
+  ) {
+    totalSessionFixe = 0; // Reset au nouveau "Commencer"
+  }
   const maintenant = Date.now();
 
   // 1. Filtrer les mots à réviser (ceux qui sont déjà connus mais "dus")
@@ -211,33 +217,43 @@ function evaluer(estCorrect) {
   prochainReset4h.setHours(4, 0, 0, 0);
 
   if (estCorrect) {
-    // On n'augmente le quota journalier que si c'est la première fois qu'on réussit ce mot
     if (motActuel.level === 0) {
+      // Mot neuf réussi → passe à 1, compte dans le quota
       nouveauxMotsAujourdhui++;
-      // On synchronise le compteur avec Firebase immédiatement
       db.ref('users/' + userId + '/compteurNouveaux').set(nouveauxMotsAujourdhui);
+      motActuel.level = 1;
+      motActuel.rateEnSession = false;
+    } else if (motActuel.rateEnSession) {
+      // Mot raté puis réussi dans la même session → ne remonte pas
+      motActuel.rateEnSession = false;
+      // On le sort de la session en le planifiant dans le futur
+      let baseTemps = prochainReset4h.getTime();
+      if (new Date().getHours() < 4) baseTemps -= 24 * 60 * 60 * 1000;
+      const intervalles = [0, 1, 3, 7, 14, 30];
+      const joursAajouter = intervalles[Math.min(motActuel.level, 5)];
+      motActuel.prochaineRevision = baseTemps + joursAajouter * 24 * 60 * 60 * 1000;
+    } else {
+      // Révision normale réussie → monte d'un niveau
+      motActuel.level += 1;
+      let baseTemps = prochainReset4h.getTime();
+      if (new Date().getHours() < 4) baseTemps -= 24 * 60 * 60 * 1000;
+      const intervalles = [0, 1, 3, 7, 14, 30];
+      const joursAajouter = intervalles[Math.min(motActuel.level, 5)];
+      motActuel.prochaineRevision = baseTemps + joursAajouter * 24 * 60 * 60 * 1000;
     }
-
-    // Passage au niveau supérieur
-    motActuel.level += 1;
-    const intervalles = [0, 1, 3, 7, 14, 30];
-    const joursAajouter = intervalles[Math.min(motActuel.level, 5)];
-
-    let baseTemps = prochainReset4h.getTime();
-    if (new Date().getHours() < 4) {
-      baseTemps -= 24 * 60 * 60 * 1000;
-    }
-    motActuel.prochaineRevision = baseTemps + joursAajouter * 24 * 60 * 60 * 1000;
   } else {
-    // Si FAUX : descend d'un niveau (min 1) et reste dû immédiatement
-    motActuel.level = Math.max(1, motActuel.level - 1);
-    motActuel.prochaineRevision = Date.now() - 60000;
+    if (motActuel.level === 0) {
+      // Mot neuf raté → reste à 0, revient dans la session
+      motActuel.prochaineRevision = Date.now() - 60000;
+    } else {
+      // Mot connu raté → perd 1 niveau, revient dans la session
+      motActuel.level = Math.max(1, motActuel.level - 1);
+      motActuel.rateEnSession = true;
+      motActuel.prochaineRevision = Date.now() - 60000;
+    }
   }
 
-  // Sauvegarde globale (scores + custom)
   sauvegarderDonnees();
-
-  // Mise à jour de la barre AVANT de piocher le suivant
   mettreAJourStats();
 
   const carte = document.getElementById('carte');
@@ -246,7 +262,6 @@ function evaluer(estCorrect) {
     piocherMot();
   }, 300);
 }
-
 // Permet de cliquer sur la carte pour la retourner
 document.getElementById('carte').addEventListener('click', () => {
   if (motActuel && faceFrancaise) {
@@ -319,9 +334,10 @@ function ajouterNouveauMot() {
 }
 
 function afficherFinSession() {
+  totalSessionFixe = 0; // Reset pour la prochaine session
   const front = document.getElementById('content-front');
-  front.innerText = 'Session terminée ! 🎉 Reviens plus tard pour de nouvelles révisions.';
-  document.getElementById('controls-start').classList.add('hidden');
+  front.innerText = 'Session terminée ! 🎉 Reviens plus tard.';
+  document.getElementById('controls-start').classList.remove('hidden'); // ← réaffiche Commencer
   document.getElementById('controls-answer').classList.add('hidden');
   document.getElementById('controls-eval').classList.add('hidden');
 }

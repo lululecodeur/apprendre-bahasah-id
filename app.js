@@ -177,13 +177,14 @@ function piocherMot() {
   const maintenant = Date.now();
 
   let aReviser = monVocabulaire.filter(m => m.level > 0 && m.prochaineRevision <= maintenant);
-  let nouveauxDispos = monVocabulaire.filter(m => m.level === 0);
+  let niveau0Rates = monVocabulaire.filter(m => m.level === 0 && m.prochaineRevision > 0);
+  let nouveauxDispos = monVocabulaire.filter(m => m.level === 0 && m.prochaineRevision === 0);
   let quotaNouveaux = Math.max(0, 20 - nouveauxMotsAujourdhui);
 
   nouveauxDispos.sort(() => Math.random() - 0.5);
   let nouveauxPourSession = nouveauxDispos.slice(0, quotaNouveaux);
 
-  let sessionPool = [...aReviser, ...nouveauxPourSession];
+  let sessionPool = [...aReviser, ...niveau0Rates, ...nouveauxPourSession];
 
   if (totalSessionFixe === 0 && sessionPool.length > 0) {
     totalSessionFixe = sessionPool.length;

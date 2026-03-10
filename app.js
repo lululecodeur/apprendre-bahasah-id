@@ -18,6 +18,7 @@ let motActuel = null;
 let faceFrancaise = true;
 let nouveauxMotsAujourdhui = 0;
 let totalSessionFixe = 0;
+let motsValidesSession = 0;
 
 // ─── TOAST ────────────────────────────────────────────────────────────────────
 function showToast(message, type = 'success') {
@@ -138,33 +139,20 @@ function sauvegarderDonnees() {
 
 // ─── STATS ────────────────────────────────────────────────────────────────────
 function mettreAJourStats() {
-  const maintenant = Date.now();
-
-  const aReviser = monVocabulaire.filter(
-    m => m.level > 0 && m.prochaineRevision <= maintenant
-  ).length;
-
-  const nouveauxDispo = monVocabulaire.filter(m => m.level === 0).length;
-  const quotaRestant = Math.max(0, 20 - nouveauxMotsAujourdhui);
-  const nouveauxAFaire = Math.min(nouveauxDispo, quotaRestant);
-
-  const resteAFaire = aReviser + nouveauxAFaire;
-
   let pourcentage = 0;
   if (totalSessionFixe > 0) {
-    pourcentage = ((totalSessionFixe - resteAFaire) / totalSessionFixe) * 100;
+    pourcentage = (motsValidesSession / totalSessionFixe) * 100;
   }
 
   const fill = document.getElementById('progress-fill');
   if (fill) fill.style.width = `${Math.max(0, Math.min(100, pourcentage))}%`;
 
-  document.getElementById('mots-acquis').innerText = Math.max(0, totalSessionFixe - resteAFaire);
+  document.getElementById('mots-acquis').innerText = motsValidesSession;
   document.getElementById('total-mots').innerText = totalSessionFixe;
 
   const dictCounter = document.getElementById('nb-mots-dict');
   if (dictCounter) dictCounter.innerText = monVocabulaire.length;
 }
-
 // ─── FLASHCARDS ───────────────────────────────────────────────────────────────
 function piocherMot() {
   if (
@@ -172,12 +160,14 @@ function piocherMot() {
     !document.getElementById('controls-start').classList.contains('hidden')
   ) {
     totalSessionFixe = 0;
+    motsValidesSession = 0;
   }
-
   const maintenant = Date.now();
 
   let aReviser = monVocabulaire.filter(m => m.level > 0 && m.prochaineRevision <= maintenant);
-  let niveau0Rates = monVocabulaire.filter(m => m.level === 0 && m.prochaineRevision > 0);
+  let niveau0Rates = monVocabulaire.filter(
+    m => m.level === 0 && m.prochaineRevision > 0 && m.prochaineRevision <= maintenant
+  );
   let nouveauxDispos = monVocabulaire.filter(m => m.level === 0 && m.prochaineRevision === 0);
   let quotaNouveaux = Math.max(0, 20 - nouveauxMotsAujourdhui);
 
@@ -186,6 +176,7 @@ function piocherMot() {
 
   let sessionPool = [...aReviser, ...niveau0Rates, ...nouveauxPourSession];
 
+  // Si on vient de cliquer sur "Commencer" (total est à 0)
   if (totalSessionFixe === 0 && sessionPool.length > 0) {
     totalSessionFixe = sessionPool.length;
   }
@@ -236,7 +227,6 @@ function retournerCarte() {
 }
 
 function evaluer(estCorrect) {
-  const maintenant = Date.now();
   const prochainReset4h = new Date();
   prochainReset4h.setHours(4, 0, 0, 0);
 
@@ -246,34 +236,38 @@ function evaluer(estCorrect) {
       db.ref('users/' + userId + '/compteurNouveaux').set(nouveauxMotsAujourdhui);
       motActuel.level = 1;
       motActuel.rateEnSession = false;
+      motsValidesSession++; // ✅ mot niveau 0 validé
     } else if (motActuel.rateEnSession) {
       motActuel.rateEnSession = false;
       let baseTemps = prochainReset4h.getTime();
       if (new Date().getHours() < 4) baseTemps -= 24 * 60 * 60 * 1000;
       const intervalles = [0, 1, 3, 7, 14, 30];
-      const joursAajouter = intervalles[Math.min(motActuel.level, 5)];
-      motActuel.prochaineRevision = baseTemps + joursAajouter * 24 * 60 * 60 * 1000;
+      motActuel.prochaineRevision =
+        baseTemps + intervalles[Math.min(motActuel.level, 5)] * 24 * 60 * 60 * 1000;
+      motsValidesSession++; // ✅ mot raté puis réussi
     } else {
       motActuel.level += 1;
       let baseTemps = prochainReset4h.getTime();
       if (new Date().getHours() < 4) baseTemps -= 24 * 60 * 60 * 1000;
       const intervalles = [0, 1, 3, 7, 14, 30];
-      const joursAajouter = intervalles[Math.min(motActuel.level, 5)];
-      motActuel.prochaineRevision = baseTemps + joursAajouter * 24 * 60 * 60 * 1000;
+      motActuel.prochaineRevision =
+        baseTemps + intervalles[Math.min(motActuel.level, 5)] * 24 * 60 * 60 * 1000;
+      motsValidesSession++; // ✅ révision normale réussie
     }
   } else {
     if (motActuel.level === 0) {
       motActuel.prochaineRevision = Date.now() - 60000;
+      // ❌ pas de motsValidesSession++
     } else {
       motActuel.level = Math.max(1, motActuel.level - 1);
       motActuel.rateEnSession = true;
       motActuel.prochaineRevision = Date.now() - 60000;
+      // ❌ pas de motsValidesSession++
     }
   }
 
   sauvegarderDonnees();
   mettreAJourStats();
-
   const carte = document.getElementById('carte');
   carte.classList.remove('flipped');
   setTimeout(() => {
@@ -289,6 +283,7 @@ document.getElementById('carte').addEventListener('click', () => {
 
 function afficherFinSession() {
   totalSessionFixe = 0;
+  motsValidesSession = 0; // ← ajoute ça
   const front = document.getElementById('content-front');
   front.innerText = '🎉 Session terminée ! Reviens plus tard.';
   document.getElementById('controls-start').classList.remove('hidden');

@@ -154,14 +154,13 @@ function mettreAJourStats() {
   if (dictCounter) dictCounter.innerText = monVocabulaire.length;
 }
 // ─── FLASHCARDS ───────────────────────────────────────────────────────────────
-let sessionPool = []; // pool fixé au début, global
+let sessionPool = [];
 
 function piocherMot() {
   if (
     document.getElementById('controls-start') &&
     !document.getElementById('controls-start').classList.contains('hidden')
   ) {
-    // Initialisation du pool au clic sur "Commencer"
     const maintenant = Date.now();
     const aReviser = monVocabulaire.filter(m => m.level > 0 && m.prochaineRevision <= maintenant);
     const niveau0Rates = monVocabulaire.filter(
@@ -177,18 +176,6 @@ function piocherMot() {
     totalSessionFixe = sessionPool.length;
     motsValidesSession = 0;
   }
-
-  // Ajouter les mots ratés qui reviennent
-  const maintenant = Date.now();
-  const revenant = monVocabulaire.filter(
-    m =>
-      m.prochaineRevision <= maintenant &&
-      m.prochaineRevision > 0 &&
-      m.level > 0 && // ← ajoute ça : exclut tous les niveau 0
-      !sessionPool.find(p => p.id === m.id) &&
-      m.id !== motActuel?.id // ← compare les ids pas les références
-  );
-  sessionPool.push(...revenant);
 
   if (sessionPool.length === 0) {
     totalSessionFixe = 0;
@@ -267,12 +254,12 @@ function evaluer(estCorrect) {
   } else {
     if (motActuel.level === 0) {
       motActuel.prochaineRevision = Date.now() - 60000;
-      // ❌ pas de motsValidesSession++
+      sessionPool.push(motActuel);
     } else {
       motActuel.level = Math.max(1, motActuel.level - 1);
       motActuel.rateEnSession = true;
       motActuel.prochaineRevision = Date.now() - 60000;
-      // ❌ pas de motsValidesSession++
+      sessionPool.push(motActuel);
     }
   }
 

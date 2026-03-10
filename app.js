@@ -184,8 +184,9 @@ function piocherMot() {
     m =>
       m.prochaineRevision <= maintenant &&
       m.prochaineRevision > 0 &&
+      m.level > 0 && // ← ajoute ça : exclut tous les niveau 0
       !sessionPool.find(p => p.id === m.id) &&
-      m !== motActuel
+      m.id !== motActuel?.id // ← compare les ids pas les références
   );
   sessionPool.push(...revenant);
 

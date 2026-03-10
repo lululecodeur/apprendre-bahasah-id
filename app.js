@@ -154,41 +154,50 @@ function mettreAJourStats() {
   if (dictCounter) dictCounter.innerText = monVocabulaire.length;
 }
 // ─── FLASHCARDS ───────────────────────────────────────────────────────────────
+let sessionPool = []; // pool fixé au début, global
+
 function piocherMot() {
   if (
     document.getElementById('controls-start') &&
     !document.getElementById('controls-start').classList.contains('hidden')
   ) {
-    totalSessionFixe = 0;
+    // Initialisation du pool au clic sur "Commencer"
+    const maintenant = Date.now();
+    const aReviser = monVocabulaire.filter(m => m.level > 0 && m.prochaineRevision <= maintenant);
+    const niveau0Rates = monVocabulaire.filter(
+      m => m.level === 0 && m.prochaineRevision > 0 && m.prochaineRevision <= maintenant
+    );
+    const nouveauxDispos = monVocabulaire.filter(m => m.level === 0 && m.prochaineRevision === 0);
+    const quotaNouveaux = Math.max(0, 20 - nouveauxMotsAujourdhui);
+    nouveauxDispos.sort(() => Math.random() - 0.5);
+    const nouveauxPourSession = nouveauxDispos.slice(0, quotaNouveaux);
+
+    sessionPool = [...aReviser, ...niveau0Rates, ...nouveauxPourSession];
+    sessionPool.sort(() => Math.random() - 0.5);
+    totalSessionFixe = sessionPool.length;
     motsValidesSession = 0;
   }
+
+  // Ajouter les mots ratés qui reviennent
   const maintenant = Date.now();
-
-  let aReviser = monVocabulaire.filter(m => m.level > 0 && m.prochaineRevision <= maintenant);
-  let niveau0Rates = monVocabulaire.filter(
-    m => m.level === 0 && m.prochaineRevision > 0 && m.prochaineRevision <= maintenant
+  const revenant = monVocabulaire.filter(
+    m =>
+      m.prochaineRevision <= maintenant &&
+      m.prochaineRevision > 0 &&
+      !sessionPool.find(p => p.id === m.id) &&
+      m !== motActuel
   );
-  let nouveauxDispos = monVocabulaire.filter(m => m.level === 0 && m.prochaineRevision === 0);
-  let quotaNouveaux = Math.max(0, 20 - nouveauxMotsAujourdhui);
-
-  nouveauxDispos.sort(() => Math.random() - 0.5);
-  let nouveauxPourSession = nouveauxDispos.slice(0, quotaNouveaux);
-
-  let sessionPool = [...aReviser, ...niveau0Rates, ...nouveauxPourSession];
-
-  // Si on vient de cliquer sur "Commencer" (total est à 0)
-  if (totalSessionFixe === 0 && sessionPool.length > 0) {
-    totalSessionFixe = sessionPool.length;
-  }
+  sessionPool.push(...revenant);
 
   if (sessionPool.length === 0) {
     totalSessionFixe = 0;
+    motsValidesSession = 0;
     afficherFinSession();
     return;
   }
 
-  sessionPool.sort(() => Math.random() - 0.5);
   motActuel = sessionPool[0];
+  sessionPool = sessionPool.slice(1); // on retire le mot tiré
 
   afficherCarte();
   mettreAJourStats();

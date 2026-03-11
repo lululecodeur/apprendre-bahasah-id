@@ -206,13 +206,24 @@ function afficherCarte() {
   front.innerText = motActuel.fr;
 
   back.innerHTML = `
-  <div class="answer-gaul">${motActuel.gaul}</div>
-  <div class="answer-baku">Formel : ${motActuel.baku}</div>
-  ${motActuel.exemple ? `<div style="margin-top:12px; font-size:0.85em; color:#6366f1; font-style:italic; text-align:center; padding: 0 10px;">"${motActuel.exemple}"</div>` : ''}
-  <div style="margin-top:15px; font-size: 0.9em; color: gray;">
-    Niveau : ${motActuel.level}
-  </div>
-`;
+    <div class="answer-gaul">${motActuel.gaul}</div>
+    <div class="answer-baku">Formel : ${motActuel.baku}</div>
+    ${
+      motActuel.exemple
+        ? `
+      <div style="margin-top:14px; text-align:center;">
+        <div style="font-size:0.85em; color:#6366f1; font-style:italic;">"${motActuel.exemple}"</div>
+        <button onclick="this.nextElementSibling.classList.remove('hidden'); this.classList.add('hidden');"
+          style="margin-top:6px; background:none; border:1px solid #6366f1; color:#6366f1; border-radius:20px; padding:3px 12px; font-size:0.75em; cursor:pointer;">
+          Voir la traduction
+        </button>
+        <div class="hidden" style="margin-top:4px; font-size:0.8em; color:#64748b; font-style:italic;">${motActuel.exempleTrad || ''}</div>
+      </div>
+    `
+        : ''
+    }
+    <div style="margin-top:15px; font-size:0.9em; color:gray;">Niveau : ${motActuel.level}</div>
+  `;
 }
 
 function retournerCarte() {
@@ -325,6 +336,7 @@ function ajouterNouveauMot() {
   const gaul = document.getElementById('new-gaul').value.trim();
   const baku = document.getElementById('new-baku').value.trim();
   const exemple = document.getElementById('new-exemple').value.trim();
+  const exempleTrad = document.getElementById('new-exemple-trad').value.trim();
 
   if (!fr || !gaul) {
     showToast('Remplis au moins le français et le gaul !', 'error');
@@ -337,6 +349,7 @@ function ajouterNouveauMot() {
     gaul,
     baku: baku || gaul,
     exemple: exemple || '',
+    exempleTrad: exempleTrad || '',
     level: 0,
     prochaineRevision: 0,
   };
@@ -348,6 +361,7 @@ function ajouterNouveauMot() {
   document.getElementById('new-gaul').value = '';
   document.getElementById('new-baku').value = '';
   document.getElementById('new-exemple').value = '';
+  document.getElementById('new-exemple-trad').value = '';
   fermerModalAjout();
 
   showToast('Mot ajouté et synchronisé ✓', 'success');
@@ -437,7 +451,9 @@ function editerMot(id) {
       <label style="display:block; font-size:0.85rem; font-weight:700; color:#64748b; margin-bottom:5px;">Formel</label>
       <input type="text" id="edit-baku" value="${mot.baku || ''}" style="width:100%; padding:12px; border-radius:12px; border:2px solid #e2e8f0; box-sizing:border-box; margin-bottom:12px;" />
       <label style="display:block; font-size:0.85rem; font-weight:700; color:#64748b; margin-bottom:5px;">Phrase d'exemple</label>
-      <input type="text" id="edit-exemple" value="${mot.exemple || ''}" style="width:100%; padding:12px; border-radius:12px; border:2px solid #e2e8f0; box-sizing:border-box; margin-bottom:20px;" />
+      <input type="text" id="edit-exemple" value="${mot.exemple || ''}" style="width:100%; padding:12px; border-radius:12px; border:2px solid #e2e8f0; box-sizing:border-box; margin-bottom:12px;" />
+      <label style="display:block; font-size:0.85rem; font-weight:700; color:#64748b; margin-bottom:5px;">Traduction de la phrase</label>
+      <input type="text" id="edit-exemple-trad" value="${mot.exempleTrad || ''}" style="width:100%; padding:12px; border-radius:12px; border:2px solid #e2e8f0; box-sizing:border-box; margin-bottom:20px;" />
       <div style="display:flex; gap:12px;">
         <button class="confirm-btn-cancel" id="edit-cancel">Annuler</button>
         <button class="confirm-btn-ok" style="background:var(--primary);" id="edit-ok">Enregistrer</button>
@@ -462,6 +478,7 @@ function editerMot(id) {
     mot.gaul = document.getElementById('edit-gaul').value.trim() || mot.gaul;
     mot.baku = document.getElementById('edit-baku').value.trim() || mot.baku;
     mot.exemple = document.getElementById('edit-exemple').value.trim();
+    mot.exempleTrad = document.getElementById('edit-exemple-trad').value.trim();
     close();
     sauvegarderDonnees();
     afficherDictionnaire(monVocabulaire);

@@ -206,12 +206,13 @@ function afficherCarte() {
   front.innerText = motActuel.fr;
 
   back.innerHTML = `
-    <div class="answer-gaul">${motActuel.gaul}</div>
-    <div class="answer-baku">Formel : ${motActuel.baku}</div>
-    <div style="margin-top:15px; font-size: 0.9em; color: gray;">
-      Niveau : ${motActuel.level}
-    </div>
-  `;
+  <div class="answer-gaul">${motActuel.gaul}</div>
+  <div class="answer-baku">Formel : ${motActuel.baku}</div>
+  ${motActuel.exemple ? `<div style="margin-top:12px; font-size:0.85em; color:#6366f1; font-style:italic; text-align:center; padding: 0 10px;">"${motActuel.exemple}"</div>` : ''}
+  <div style="margin-top:15px; font-size: 0.9em; color: gray;">
+    Niveau : ${motActuel.level}
+  </div>
+`;
 }
 
 function retournerCarte() {
@@ -323,6 +324,7 @@ function ajouterNouveauMot() {
   const fr = document.getElementById('new-fr').value.trim();
   const gaul = document.getElementById('new-gaul').value.trim();
   const baku = document.getElementById('new-baku').value.trim();
+  const exemple = document.getElementById('new-exemple').value.trim();
 
   if (!fr || !gaul) {
     showToast('Remplis au moins le français et le gaul !', 'error');
@@ -334,8 +336,9 @@ function ajouterNouveauMot() {
     fr,
     gaul,
     baku: baku || gaul,
+    exemple: exemple || '',
     level: 0,
-    prochaineRevision: Date.now(),
+    prochaineRevision: 0,
   };
 
   monVocabulaire.push(nouveauMot);
@@ -344,6 +347,7 @@ function ajouterNouveauMot() {
   document.getElementById('new-fr').value = '';
   document.getElementById('new-gaul').value = '';
   document.getElementById('new-baku').value = '';
+  document.getElementById('new-exemple').value = '';
   fermerModalAjout();
 
   showToast('Mot ajouté et synchronisé ✓', 'success');
@@ -381,11 +385,20 @@ function afficherDictionnaire(liste) {
           </span>
         </div>
         <p style="margin: 5px 0 0 0; color: #555;">${mot.gaul} ${mot.baku ? `<small style="color:gray;">(${mot.baku})</small>` : ''}</p>
+        ${mot.exemple ? `<p style="margin: 4px 0 0 0; font-size:0.8em; color:#6366f1; font-style:italic;">"${mot.exemple}"</p>` : ''}
       </div>
       <div style="display: flex; align-items: center; gap: 10px;">
-        ${estCustom ? `<button onclick="supprimerMot('${mot.id}')" style="background:none; border:none; cursor:pointer; font-size:1.2em; opacity: 0.5;">🗑️</button>` : ''}
+        ${
+          estCustom
+            ? `
+          <button onclick="editerMot('${mot.id}')" style="background:none; border:none; cursor:pointer; font-size:1.2em; opacity:0.5;">✏️</button>
+          <button onclick="supprimerMot('${mot.id}')" style="background:none; border:none; cursor:pointer; font-size:1.2em; opacity:0.5;">🗑️</button>
+        `
+            : ''
+        }
       </div>
     `;
+
     conteneur.appendChild(div);
   });
 }
@@ -405,6 +418,55 @@ function filtrerDictionnaire() {
     m => m.fr.toLowerCase().includes(recherche) || m.gaul.toLowerCase().includes(recherche)
   );
   afficherDictionnaire(resultats);
+}
+
+function editerMot(id) {
+  const mot = monVocabulaire.find(m => m.id === id);
+  if (!mot) return;
+
+  const modal = document.createElement('div');
+  modal.id = 'modal-edition';
+  modal.className = 'confirm-overlay';
+  modal.innerHTML = `
+    <div class="confirm-box" style="text-align:left; max-width:400px;">
+      <h3 style="margin:0 0 20px; color:var(--primary);">Modifier le mot</h3>
+      <label style="display:block; font-size:0.85rem; font-weight:700; color:#64748b; margin-bottom:5px;">Français</label>
+      <input type="text" id="edit-fr" value="${mot.fr}" style="width:100%; padding:12px; border-radius:12px; border:2px solid #e2e8f0; box-sizing:border-box; margin-bottom:12px;" />
+      <label style="display:block; font-size:0.85rem; font-weight:700; color:#64748b; margin-bottom:5px;">Langage courant</label>
+      <input type="text" id="edit-gaul" value="${mot.gaul}" style="width:100%; padding:12px; border-radius:12px; border:2px solid #e2e8f0; box-sizing:border-box; margin-bottom:12px;" />
+      <label style="display:block; font-size:0.85rem; font-weight:700; color:#64748b; margin-bottom:5px;">Formel</label>
+      <input type="text" id="edit-baku" value="${mot.baku || ''}" style="width:100%; padding:12px; border-radius:12px; border:2px solid #e2e8f0; box-sizing:border-box; margin-bottom:12px;" />
+      <label style="display:block; font-size:0.85rem; font-weight:700; color:#64748b; margin-bottom:5px;">Phrase d'exemple</label>
+      <input type="text" id="edit-exemple" value="${mot.exemple || ''}" style="width:100%; padding:12px; border-radius:12px; border:2px solid #e2e8f0; box-sizing:border-box; margin-bottom:20px;" />
+      <div style="display:flex; gap:12px;">
+        <button class="confirm-btn-cancel" id="edit-cancel">Annuler</button>
+        <button class="confirm-btn-ok" style="background:var(--primary);" id="edit-ok">Enregistrer</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  requestAnimationFrame(() => modal.classList.add('confirm-visible'));
+
+  const close = () => {
+    modal.classList.remove('confirm-visible');
+    setTimeout(() => modal.remove(), 300);
+  };
+
+  document.getElementById('edit-cancel').addEventListener('click', close);
+  modal.addEventListener('click', e => {
+    if (e.target === modal) close();
+  });
+
+  document.getElementById('edit-ok').addEventListener('click', () => {
+    mot.fr = document.getElementById('edit-fr').value.trim() || mot.fr;
+    mot.gaul = document.getElementById('edit-gaul').value.trim() || mot.gaul;
+    mot.baku = document.getElementById('edit-baku').value.trim() || mot.baku;
+    mot.exemple = document.getElementById('edit-exemple').value.trim();
+    close();
+    sauvegarderDonnees();
+    afficherDictionnaire(monVocabulaire);
+    showToast('Mot modifié ✓', 'success');
+  });
 }
 
 // ─── RESET ────────────────────────────────────────────────────────────────────
